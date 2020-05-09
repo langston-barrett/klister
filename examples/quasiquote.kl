@@ -1,68 +1,5 @@
 #lang "n-ary-app.kl"
-
-[import [shift "n-ary-app.kl" 1]]
-[import [shift "defun.kl" 1]]
-
-
-(meta
-  (defun map-syntax (f stx)
-    (syntax-case stx
-      [() stx]
-      [(cons a d)
-       (cons-list-syntax (f a) (map-syntax f d) stx)]
-      [_ stx])))
-
-[define-macros
-  ([unquote
-    [lambda (stx)
-      (syntax-error [quote "unquote used out of context"] stx)]]
-   [quasiquote
-    [lambda (stx)
-      (syntax-case stx
-        [[list [_ e]]
-         (syntax-case e
-           [[ident x]
-            [pure [list-syntax [[quote quote] x]
-                               x]]]
-           [()
-            [pure
-             [list-syntax [[quote empty-list-syntax]
-                           [list-syntax [[quote quote]
-                                        e]
-                                       'here]]
-                         e]]]
-           [[cons x y]
-            (syntax-case x
-              [[ident i]
-               [>>= [free-identifier=? i [quote unquote]]
-                 [lambda [unquote?]
-                   [if unquote?
-                       (syntax-case y
-                         [[list [v]] [pure v]]
-                         [_ (syntax-error '"wrong number of arguments to unquote" e)])
-                       [pure
-                        (list-syntax ('list-syntax
-                                        (map-syntax (lambda (s)
-                                                      (list-syntax ('quasiquote s)
-                                                                   s))
-                                                    e)
-                                        (list-syntax ('quote 'foo) 'foo))
-                                      e)]]]]]
-              [_ [pure
-                  (list-syntax ('list-syntax
-                                  (map-syntax (lambda (s)
-                                                (list-syntax ('quasiquote s) s))
-                                              e)
-                                  (list-syntax ('quote 'foo) 'foo))
-                                e)]])])]
-        [_ (syntax-error [list-syntax [[quote "bad syntax"] stx] stx] stx)])]])]
-
-(define-macros
-  ([quasiquote/loc
-    (lambda (stx)
-      (syntax-case stx
-        [(list (_ loc q))
-         (pure (list-syntax ('replace-loc loc (list-syntax ('quasiquote q) stx)) stx))]))]))
+(import "quasiquote.kl")
 
 [define thing [quote nothing]]
 
@@ -80,6 +17,3 @@
 [example [quasiquote (thing [unquote thing] thing)]]
 
 (example (quasiquote/loc thing (thing ,thing)))
-
-[export quasiquote unquote quasiquote/loc]
-

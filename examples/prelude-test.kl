@@ -9,3 +9,15 @@
 [example (compose* id)]
 [example (compose* id id)]
 [example (compose* id id id)]
+
+
+(defun last-stx (stx)
+  (syntax-case stx
+    ((cons a d)
+     (syntax-case d
+       (() a)
+       (_ (last-stx d))))  -- note that this is a recursive call to last-stx, whereas earlier (e.g. in n-ary-app.kl)
+                           -- we'd have to return the syntax of a macro call to last-stx.
+    (_ stx)))
+
+[example (last-stx '(a b c d e f g))]

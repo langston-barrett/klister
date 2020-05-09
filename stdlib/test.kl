@@ -1,0 +1,3 @@
+#lang "n-ary-app.kl"
+(import (shift "n-ary-app.kl" 1))
+
